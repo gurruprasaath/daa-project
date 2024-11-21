@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sudoku Solver</title>
+    <style>
+        /* General styling */
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            text-align: center;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        /* Styling for Sudoku grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            width: 360px;
+            gap: 0;
+            border: 2px solid #333;
+            background-color: #333;
+        }
+
+        .cell {
+            width: 100%;
+            height: 40px;
+            font-size: 20px;
+            text-align: center;
+            border: 1px solid #ccc;
+            outline: none;
+            background-color: #fff;
+            color: #333;
+        }
+
+        /* Thicker borders for 3x3 sections */
+        .cell:nth-child(3n+1):not(:first-child) {
+            border-left: 2px solid #333;
+        }
+
+        .cell:nth-of-type(n+19):nth-of-type(-n+27),
+        .cell:nth-of-type(n+46):nth-of-type(-n+54),
+        .cell:nth-of-type(n+73):nth-of-type(-n+81) {
+            border-bottom: 2px solid #333;
+        }
+
+        /* Styling for buttons */
+        .buttons {
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 0 5px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            background-color: #007bff;
+            color: #fff;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:active {
+            background-color: #003f7f;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sudoku Solver</h1>
+        <div class="grid" id="sudokuGrid">
+            <!-- 81 input cells for the Sudoku board -->
+            <script>
+                for (let i = 0; i < 81; i++) {
+                    document.write('<input type="text" maxlength="1" class="cell" oninput="validateInput(this, ' + i + ')" />');
+                }
+            </script>
+        </div>
+        <div class="buttons">
+            <button onclick="solveSudoku()">Solve</button>
+            <button onclick="clearGrid()">Clear</button>
+        </div>
+    </div>
+
+    <script>
+        // Sudoku backtracking solver
+        function isValid(board, row, col, num) {
+            // Check row, column, and 3x3 subgrid
+            for (let i = 0; i < 9; i++) {
+                if (board[row][i] == num || board[i][col] == num) return false;
+            }
+            const startRow = row - row % 3, startCol = col - col % 3;
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    if (board[i + startRow][j + startCol] == num) return false;
+                }
+            }
+            return true;
+        }
+
+        function solve(board) {
+            for (let row = 0; row < 9; row++) {
+                for (let col = 0; col < 9; col++) {
+                    if (board[row][col] == 0) {
+                        for (let num = 1; num <= 9; num++) {
+                            if (isValid(board, row, col, num)) {
+                                board[row][col] = num;
+                                if (solve(board)) return true;
+                                board[row][col] = 0;  // backtrack
+                            }
+                        }
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        function getBoard() {
+            const cells = document.querySelectorAll('.cell');
+            let board = [];
+            for (let i = 0; i < 9; i++) {
+                board[i] = [];
+                for (let j = 0; j < 9; j++) {
+                    const value = cells[i * 9 + j].value;
+                    board[i][j] = value ? parseInt(value) : 0;
+                }
+            }
+            return board;
+        }
+
+        function displayBoard(board) {
+            const cells = document.querySelectorAll('.cell');
+            for (let i = 0; i < 9; i++) {
+                for (let j = 0; j < 9; j++) {
+                    cells[i * 9 + j].value = board[i][j] || '';
+                }
+            }
+        }
+
+        function solveSudoku() {
+            const board = getBoard();
+            if (solve(board)) {
+                displayBoard(board);
+            } else {
+                alert("This Sudoku puzzle is unsolvable");
+            }
+        }
+
+        function clearGrid() {
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => cell.value = '');
+        }
+
+        // Real-time validation to avoid repeated numbers in rows or columns
+        function validateInput(cell, index) {
+            const cells = document.querySelectorAll('.cell');
+            const value = cell.value;
+            const row = Math.floor(index / 9);
+            const col = index % 9;
+            
+            // Clear cell if input is not a number between 1 and 9
+            if (!/^[1-9]$/.test(value)) {
+                cell.value = '';
+                return;
+            }
+            
+            // Check for duplicates in row and column
+            for (let i = 0; i < 9; i++) {
+                // Row check
+                if (i !== col && cells[row * 9 + i].value === value) {
+                    alert("Duplicate number in row");
+                    cell.value = '';
+                    return;
+                }
+                // Column check
+                if (i !== row && cells[i * 9 + col].value === value) {
+                    alert("Duplicate number in column");
+                    cell.value = '';
+                    return;
+                }
+            }
+        }
+    </script>
+</body>
+</html>
